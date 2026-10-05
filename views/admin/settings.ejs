@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="admin">
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a href="/admin" class="wordmark">Jody Office Admin</a>
+      <nav class="admin-nav">
+        <a href="/admin" class="admin-nav__link">Products</a>
+        <a href="/admin/categories" class="admin-nav__link">Categories</a>
+        <a href="/admin/stock-import" class="admin-nav__link">Stock Import</a>
+        <a href="/admin/settings" class="admin-nav__link is-active">Site Settings</a>
+        <% if (currentUser.role === 'ADMIN') { %><a href="/admin/users" class="admin-nav__link">Users</a><% } %>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap admin-panel">
+    <h1>Site settings</h1>
+    <p class="admin-form__hint">This controls the homepage hero text, the About section, the WhatsApp number the order button uses, and the social links in the header menu. The homepage image slider itself is still controlled per-product — check "Add to homepage image slider" on a product's edit page.</p>
+
+    <% if (notice) { %>
+      <p class="banner banner--ok"><%= notice %></p>
+    <% } %>
+    <% if (error) { %>
+      <p class="banner banner--error"><%= error %></p>
+    <% } %>
+
+    <form method="POST" action="/admin/settings" class="admin-form">
+      <fieldset class="admin-form__group">
+        <legend>WhatsApp order numbers</legend>
+        <p class="admin-form__hint">Used by the "Order on WhatsApp" button on product pages. With more than one active number, customers get a popup to pick who to message. Country code, digits only (e.g. 201234567890) — non-digits are stripped automatically. Untick "Active" to keep a number saved without showing it.</p>
+        <div id="whatsappRows"></div>
+        <button type="button" id="addWhatsappBtn" class="btn btn-ghost">+ Add number</button>
+      </fieldset>
+
+      <fieldset class="admin-form__group">
+        <legend>Contact numbers</legend>
+        <p class="admin-form__hint">Shown as tap-to-call numbers in the site footer (not WhatsApp). E.g. a landline or a general inquiries number.</p>
+        <div id="contactRows"></div>
+        <button type="button" id="addContactBtn" class="btn btn-ghost">+ Add number</button>
+      </fieldset>
+
+      <label>Footer contact email
+        <input type="email" name="footerEmail" value="<%= settings.footer.email %>" required />
+      </label>
+
+      <fieldset class="admin-form__group">
+        <legend>English</legend>
+        <label>Tagline (used in the browser tab / search results title)
+          <input type="text" name="taglineEn" value="<%= settings.tagline.en %>" required />
+        </label>
+        <label>Meta description (shown under the title in Google search results)
+          <textarea name="metaDescriptionEn" rows="3" required><%= settings.metaDescription.en %></textarea>
+        </label>
+        <label>Hero heading
+          <input type="text" name="heroTitleEn" value="<%= settings.hero.title.en %>" required />
+        </label>
+        <label>Hero subtitle
+          <textarea name="heroSubtitleEn" rows="2" required><%= settings.hero.subtitle.en %></textarea>
+        </label>
+        <label>Hero button text
+          <input type="text" name="heroCtaEn" value="<%= settings.hero.cta.en %>" required />
+        </label>
+        <label>About heading
+          <input type="text" name="aboutTitleEn" value="<%= settings.about.title.en %>" required />
+        </label>
+        <label>About body
+          <textarea name="aboutBodyEn" rows="5" required><%= settings.about.body.en %></textarea>
+        </label>
+        <label>Footer copyright text (year is added automatically, e.g. "© 2026 " + this)
+          <input type="text" name="footerRightsEn" value="<%= settings.footer.rightsText.en %>" required />
+        </label>
+      </fieldset>
+
+      <fieldset class="admin-form__group admin-form__group--rtl" dir="rtl">
+        <legend>العربية (Arabic)</legend>
+        <label>الشعار (يظهر في تبويب المتصفح ونتائج البحث)
+          <input type="text" name="taglineAr" value="<%= settings.tagline.ar %>" required />
+        </label>
+        <label>وصف الميتا (يظهر تحت العنوان في نتائج بحث جوجل)
+          <textarea name="metaDescriptionAr" rows="3" required><%= settings.metaDescription.ar %></textarea>
+        </label>
+        <label>عنوان الهيرو
+          <input type="text" name="heroTitleAr" value="<%= settings.hero.title.ar %>" required />
+        </label>
+        <label>الوصف الفرعي للهيرو
+          <textarea name="heroSubtitleAr" rows="2" required><%= settings.hero.subtitle.ar %></textarea>
+        </label>
+        <label>نص زر الهيرو
+          <input type="text" name="heroCtaAr" value="<%= settings.hero.cta.ar %>" required />
+        </label>
+        <label>عنوان قسم "عن المكتب"
+          <input type="text" name="aboutTitleAr" value="<%= settings.about.title.ar %>" required />
+        </label>
+        <label>نص قسم "عن المكتب"
+          <textarea name="aboutBodyAr" rows="5" required><%= settings.about.body.ar %></textarea>
+        </label>
+        <label>نص حقوق النشر في الفوتر (السنة بتتضاف تلقائيًا قبل النص ده)
+          <input type="text" name="footerRightsAr" value="<%= settings.footer.rightsText.ar %>" required />
+        </label>
+      </fieldset>
+
+      <fieldset class="admin-form__group">
+        <legend>Social links</legend>
+        <p class="admin-form__hint">Shown in the "Social Media" menu in the header.</p>
+        <div id="socialRows"></div>
+        <button type="button" id="addSocialBtn" class="btn btn-ghost">+ Add link</button>
+      </fieldset>
+
+      <div class="admin-form__actions">
+        <a href="/admin" class="btn btn-ghost">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save settings</button>
+      </div>
+    </form>
+  </main>
+
+  <script nonce="<%= cspNonce %>">
+    (function () {
+      var wrap = document.getElementById('socialRows');
+      var existing = <%- safeJson(settings.socialLinks || []) %>;
+      var n = 0;
+
+      function addRow(name, url) {
+        var i = n++;
+        var row = document.createElement('div');
+        row.className = 'color-row';
+        row.innerHTML =
+          '<input type="text" name="socialName_' + i + '" placeholder="e.g. Instagram" value="' +
+          String(name || '').replace(/"/g, '&quot;') + '" />' +
+          '<input type="text" name="socialUrl_' + i + '" placeholder="https://..." value="' +
+          String(url || '').replace(/"/g, '&quot;') + '" />' +
+          '<button type="button" class="color-row__remove" aria-label="Remove link">&times;</button>';
+        row.querySelector('.color-row__remove').addEventListener('click', function () { row.remove(); });
+        wrap.appendChild(row);
+      }
+
+      document.getElementById('addSocialBtn').addEventListener('click', function () { addRow('', ''); });
+      existing.forEach(function (s) { addRow(s.name, s.url); });
+    })();
+
+    (function () {
+      function phoneRowBuilder(wrapId, prefix, numberPlaceholder) {
+        var wrap = document.getElementById(wrapId);
+        var n = 0;
+        return function addRow(label, number, active) {
+          var i = n++;
+          var row = document.createElement('div');
+          row.className = 'color-row';
+          row.innerHTML =
+            '<input type="text" name="' + prefix + 'Label_' + i + '" placeholder="Label (optional, e.g. Sales)" value="' +
+            String(label || '').replace(/"/g, '&quot;') + '" />' +
+            '<input type="text" name="' + prefix + 'Number_' + i + '" placeholder="' + numberPlaceholder + '" value="' +
+            String(number || '').replace(/"/g, '&quot;') + '" />' +
+            '<label style="display:flex;align-items:center;gap:4px;white-space:nowrap;">' +
+            '<input type="checkbox" name="' + prefix + 'Active_' + i + '"' + (active === false ? '' : ' checked') + ' /> Active</label>' +
+            '<button type="button" class="color-row__remove" aria-label="Remove number">&times;</button>';
+          row.querySelector('.color-row__remove').addEventListener('click', function () { row.remove(); });
+          wrap.appendChild(row);
+        };
+      }
+
+      var addWa = phoneRowBuilder('whatsappRows', 'whatsapp', 'e.g. 201234567890');
+      var existingWa = <%- safeJson(settings.whatsappNumbers || []) %>;
+      document.getElementById('addWhatsappBtn').addEventListener('click', function () { addWa('', '', true); });
+      existingWa.forEach(function (p) { addWa(p.label, p.number, p.active); });
+
+      var addContact = phoneRowBuilder('contactRows', 'contact', 'e.g. 0223456789');
+      var existingContact = <%- safeJson(settings.contactNumbers || []) %>;
+      document.getElementById('addContactBtn').addEventListener('click', function () { addContact('', '', true); });
+      existingContact.forEach(function (p) { addContact(p.label, p.number, p.active); });
+    })();
+  </script>
+</body>
+</html>

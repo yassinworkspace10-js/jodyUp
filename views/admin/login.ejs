@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="admin">
+  <main class="wrap admin-auth">
+    <h1 class="wordmark">Jody Office Admin</h1>
+    <% if (error) { %>
+      <p class="form-error"><%= error %></p>
+    <% } %>
+    <form method="POST" action="/admin/login" class="admin-form">
+      <label>Email <input type="email" name="email" required /></label>
+      <label>Password <input type="password" name="password" required /></label>
+      <button type="submit" class="btn btn-primary">Log in</button>
+    </form>
+  </main>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="admin">
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a href="/admin" class="wordmark">Jody Office Admin</a>
+      <nav class="admin-nav">
+        <a href="/admin" class="admin-nav__link">Products</a>
+        <a href="/admin/categories" class="admin-nav__link">Categories</a>
+        <a href="/admin/stock-import" class="admin-nav__link">Stock Import</a>
+        <a href="/admin/settings" class="admin-nav__link">Site Settings</a>
+        <a href="/admin/users" class="admin-nav__link is-active">Users</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap admin-panel">
+    <h1>Users</h1>
+    <p class="admin-form__hint">Everyone listed here can log into this admin panel. Only ADMIN accounts can add or remove users — a USER account can manage products and stock but not this page.</p>
+
+    <% if (notice) { %>
+      <p class="banner banner--ok"><%= notice %></p>
+    <% } %>
+    <% if (error) { %>
+      <p class="banner banner--error"><%= error %></p>
+    <% } %>
+
+    <table class="admin-table">
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr>
+      </thead>
+      <tbody>
+        <% users.forEach(function(u) { %>
+          <tr>
+            <td><%= u.name %><%= String(u._id) === currentUser.id ? ' (you)' : '' %></td>
+            <td><%= u.email %></td>
+            <td><%= u.role %></td>
+            <td class="admin-table__actions">
+              <% if (String(u._id) !== currentUser.id) { %>
+                <form method="POST" action="/admin/users/<%= u._id %>/delete" data-confirm="Remove “<%= u.name %>” from the admin panel?" style="display:inline">
+                  <button type="submit" class="link-danger">Delete</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+
+    <fieldset class="admin-form__group" style="margin-top: 24px; max-width: 480px;">
+      <legend>Add a user</legend>
+      <form method="POST" action="/admin/users" class="admin-form">
+        <label>Name
+          <input type="text" name="name" required />
+        </label>
+        <label>Email
+          <input type="email" name="email" required />
+        </label>
+        <label>Password (min. 8 characters)
+          <input type="password" name="password" minlength="8" required />
+        </label>
+        <label>Role
+          <select name="role">
+            <% roles.forEach(function(r) { %>
+              <option value="<%= r %>"><%= r %></option>
+            <% }); %>
+          </select>
+        </label>
+        <div class="admin-form__actions">
+          <button type="submit" class="btn btn-primary">Add user</button>
+        </div>
+      </form>
+    </fieldset>
+  </main>
+</body>
+</html>

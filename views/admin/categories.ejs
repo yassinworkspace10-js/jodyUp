@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="admin">
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a href="/admin" class="wordmark">Jody Office Admin</a>
+      <nav class="admin-nav">
+        <a href="/admin" class="admin-nav__link">Products</a>
+        <a href="/admin/categories" class="admin-nav__link is-active">Categories</a>
+        <a href="/admin/stock-import" class="admin-nav__link">Stock Import</a>
+        <a href="/admin/settings" class="admin-nav__link">Site Settings</a>
+        <% if (currentUser.role === 'ADMIN') { %><a href="/admin/users" class="admin-nav__link">Users</a><% } %>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap admin-panel">
+    <h1>Categories</h1>
+    <p class="admin-form__hint">These are the categories shoppers filter by, and the ones you pick from when adding a product. Every category needs both an English and an Arabic label.</p>
+
+    <% if (notice) { %>
+      <p class="banner banner--ok"><%= notice %></p>
+    <% } %>
+    <% if (error) { %>
+      <p class="banner banner--error"><%= error %></p>
+    <% } %>
+
+    <table class="admin-table">
+      <thead>
+        <tr><th>Key</th><th>English label</th><th>Arabic label</th><th></th></tr>
+      </thead>
+      <tbody>
+        <% categories.forEach(function(cat) { %>
+          <tr>
+            <td><%= cat.key %></td>
+            <td><%= cat.label.en %></td>
+            <td dir="rtl"><%= cat.label.ar %></td>
+            <td class="admin-table__actions">
+              <form method="POST" action="/admin/categories/<%= cat._id %>/delete" data-confirm="Delete the “<%= cat.label.en %>” category? This can't be undone." style="display:inline">
+                <button type="submit" class="link-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+
+    <fieldset class="admin-form__group" style="margin-top: 24px; max-width: 480px;">
+      <legend>Add a category</legend>
+      <form method="POST" action="/admin/categories" class="admin-form">
+        <label>Key (URL-safe, English letters, no spaces)
+          <input type="text" name="key" placeholder="e.g. jackets" required />
+        </label>
+        <label>Label (English)
+          <input type="text" name="labelEn" placeholder="e.g. Jackets" required />
+        </label>
+        <label>Label (Arabic)
+          <input type="text" name="labelAr" placeholder="مثال: چاكيتات" dir="rtl" required />
+        </label>
+        <div class="admin-form__actions">
+          <button type="submit" class="btn btn-primary">Add category</button>
+        </div>
+      </form>
+    </fieldset>
+  </main>
+</body>
+</html>

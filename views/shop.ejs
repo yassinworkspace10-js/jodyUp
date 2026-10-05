@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="<%= locale %>" dir="<%= t.dir %>">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <% breadcrumbs.forEach(function(crumb, i) { %>
+        <% if (i === breadcrumbs.length - 1) { %>
+          <span aria-current="page"><%= crumb.name %></span>
+        <% } else { %>
+          <a href="<%= crumb.url %>"><%= crumb.name %></a><span class="breadcrumbs__sep">/</span>
+        <% } %>
+      <% }); %>
+    </nav>
+
+    <section class="page-heading">
+      <h1><%= activeCategory ? categoryLabel(activeCategory) : t.shop_all %></h1>
+      <% if (search) { %>
+        <p class="results-note"><%= t.results_for(products.length, search) %></p>
+      <% } %>
+    </section>
+
+    <form action="<%= prefix %>/shop" method="GET" class="filter-bar">
+      <% if (activeCategory) { %><input type="hidden" name="category" value="<%= activeCategory %>" /><% } %>
+      <% if (search) { %><input type="hidden" name="q" value="<%= search %>" /><% } %>
+
+      <% if (availableSizes.length) { %>
+        <label class="filter-bar__field">
+          <%= t.filter_size %>
+          <select name="size">
+            <option value=""><%= t.filter_all_sizes %></option>
+            <% availableSizes.forEach(function(s) { %>
+              <option value="<%= s %>" <%= activeSize === s ? 'selected' : '' %>><%= sizeLabel(s) %></option>
+            <% }); %>
+          </select>
+        </label>
+      <% } %>
+
+      <% if (availableColors.length) { %>
+        <label class="filter-bar__field">
+          <%= t.filter_color %>
+          <select name="color">
+            <option value=""><%= t.filter_all_colors %></option>
+            <% availableColors.forEach(function(c) { %>
+              <option value="<%= c %>" <%= activeColor === c ? 'selected' : '' %>><%= c %></option>
+            <% }); %>
+          </select>
+        </label>
+      <% } %>
+
+      <label class="filter-bar__field filter-bar__field--price">
+        <%= t.filter_price %>
+        <span class="filter-bar__price-inputs">
+          <input type="number" name="minPrice" min="0" step="1" placeholder="<%= t.filter_price_min %>" value="<%= minPrice %>" />
+          <span aria-hidden="true">–</span>
+          <input type="number" name="maxPrice" min="0" step="1" placeholder="<%= t.filter_price_max %>" value="<%= maxPrice %>" />
+        </span>
+      </label>
+
+      <label class="filter-bar__field">
+        <%= t.sort_by %>
+        <select name="sort">
+          <option value="newest" <%= sort === 'newest' ? 'selected' : '' %>><%= t.sort_newest %></option>
+          <option value="price_asc" <%= sort === 'price_asc' ? 'selected' : '' %>><%= t.sort_price_asc %></option>
+          <option value="price_desc" <%= sort === 'price_desc' ? 'selected' : '' %>><%= t.sort_price_desc %></option>
+        </select>
+      </label>
+
+      <button type="submit" class="btn btn-ghost btn-sm"><%= t.apply %></button>
+      <% if (activeSize || activeColor || minPrice !== '' || maxPrice !== '') { %>
+        <a class="filter-bar__clear" href="<%= prefix %>/shop<%= activeCategory ? `?category=${activeCategory}` : '' %>"><%= t.filter_clear %></a>
+      <% } %>
+    </form>
+
+    <% if (products.length === 0) { %>
+      <p class="empty-state"><%= activeCategory ? t.empty_shop_category : t.empty_shop %></p>
+    <% } else { %>
+      <div class="product-grid">
+        <% products.forEach(function(product) { %>
+          <%
+            const lowStock = product.inStock && product.stockQuantity !== null && product.stockQuantity !== undefined && product.stockQuantity <= lowStockThreshold;
+          %>
+          <a href="<%= prefix %>/product/<%= product.slug %>" class="product-card<%= !product.inStock ? ' is-out-of-stock' : '' %>">
+            <div class="product-card__image">
+              <img src="<%= thumb(product.images[0]) %>" decoding="async" alt="<%= product.name[locale] %>" loading="lazy" />
+              <span class="product-tag"><%= categoryLabel(product.category) %></span>
+              <% if (!product.inStock) { %>
+                <span class="stock-badge stock-badge--out"><%= t.out_of_stock %></span>
+              <% } else if (lowStock) { %>
+                <span class="stock-badge stock-badge--low"><%= t.low_stock(product.stockQuantity) %></span>
+              <% } %>
+              <button type="button" class="wishlist-heart" data-wishlist-toggle data-product-id="<%= product._id %>" aria-label="<%= t.wishlist_add_aria %>">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.7-4.35-9.3-8.1C1 10.2 1.4 6.6 4.4 4.9c2.4-1.4 5.2-.6 6.6 1.4l1 1.4 1-1.4c1.4-2 4.2-2.8 6.6-1.4 3 1.7 3.4 5.3 1.7 8-2.6 3.75-9.3 8.1-9.3 8.1z"/></svg>
+              </button>
+            </div>
+            <h2 class="product-card__name"><%= product.name[locale] %></h2>
+            <p class="product-card__price"><%= formatPrice(product) %></p>
+          </a>
+        <% }); %>
+      </div>
+      <% if (totalPages > 1) { %>
+        <nav class="pagination" aria-label="Pagination">
+          <% if (page > 1) { %><a class="btn btn-ghost btn-sm" rel="prev" href="<%= pageUrl(page - 1) %>"><%= t.page_prev %></a><% } %>
+          <span class="pagination__info"><%= t.page_of(page, totalPages) %></span>
+          <% if (page < totalPages) { %><a class="btn btn-ghost btn-sm" rel="next" href="<%= pageUrl(page + 1) %>"><%= t.page_next %></a><% } %>
+        </nav>
+      <% } %>
+    <% } %>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

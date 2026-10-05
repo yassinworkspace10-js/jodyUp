@@ -1,0 +1,119 @@
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title><%= title %></title>
+<meta name="description" content="<%= typeof description !== 'undefined' ? description : t.metaDescription %>" />
+<meta name="robots" content="<%= typeof robots !== 'undefined' ? robots : 'index, follow' %>" />
+<meta name="theme-color" content="#014838" />
+<link rel="icon" type="image/png" href="/images/favicon.png">
+
+<% const absUrl = typeof canonicalUrl !== 'undefined' ? canonicalUrl : currentUrl; %>
+<link rel="canonical" href="<%= absUrl %>" />
+
+<% const enUrl = locale === 'ar' ? siteUrl + altPath : absUrl; %>
+<% const arUrl = locale === 'ar' ? absUrl : siteUrl + altPath; %>
+<link rel="alternate" hreflang="en" href="<%= enUrl %>" />
+<link rel="alternate" hreflang="ar" href="<%= arUrl %>" />
+<link rel="alternate" hreflang="x-default" href="<%= enUrl %>" />
+
+<% const absImg = (u) => /^https?:\/\//.test(u) ? u : siteUrl + u; %>
+<% const ogImage = typeof product !== 'undefined' && product && product.images && product.images.length
+     ? absImg(product.images[0])
+     : siteUrl + '/images/favicon.png'; %>
+<meta property="og:type" content="<%= typeof product !== 'undefined' && product ? 'product' : 'website' %>" />
+<meta property="og:site_name" content="<%= t.brand %>" />
+<meta property="og:locale" content="<%= locale === 'ar' ? 'ar_EG' : 'en_US' %>" />
+<meta property="og:url" content="<%= absUrl %>" />
+<meta property="og:title" content="<%= title %>" />
+<meta property="og:description" content="<%= typeof description !== 'undefined' ? description : t.metaDescription %>" />
+<meta property="og:image" content="<%= ogImage %>" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="<%= title %>" />
+<meta name="twitter:description" content="<%= typeof description !== 'undefined' ? description : t.metaDescription %>" />
+<meta name="twitter:image" content="<%= ogImage %>" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600&family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/css/style.css" />
+<script src="/js/main.js" defer></script>
+
+<% if (typeof product !== 'undefined' && product) { %>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": <%- safeJson(product.name[locale]) %>,
+  "description": <%- safeJson(product.description[locale]) %>,
+  "sku": <%- safeJson(String(product._id)) %>,
+  <% if (product.modelNumber) { %>"mpn": <%- safeJson(product.modelNumber) %>,<% } %>
+  "image": <%- safeJson(product.images.map(absImg)) %>,
+  "url": <%- safeJson(absUrl) %>,
+  "brand": { "@type": "Brand", "name": <%- safeJson(t.brand) %> },
+  "offers": {
+    "@type": "Offer",
+    "url": <%- safeJson(absUrl) %>,
+    "priceCurrency": "EGP",
+    "price": <%- safeJson(product.priceEGP) %>,
+    "availability": "<%= product.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' %>"
+  }
+}
+</script>
+<% } %>
+
+<% if (typeof products !== 'undefined' && products && products.length) { %>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "ItemList",
+  "itemListElement": <%- safeJson(products.slice(0, 24).map((p, i) => ({
+    "@type": "ListItem",
+    "position": i + 1,
+    "url": siteUrl + prefix + "/product/" + p.slug
+  }))) %>
+}
+</script>
+<% } %>
+
+<% if (typeof breadcrumbs !== 'undefined' && breadcrumbs && breadcrumbs.length) { %>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "BreadcrumbList",
+  "itemListElement": <%- safeJson(breadcrumbs.map((b, i) => ({
+    "@type": "ListItem",
+    "position": i + 1,
+    "name": b.name,
+    "item": siteUrl + b.url
+  }))) %>
+}
+</script>
+<% } %>
+
+<% if (typeof activeNav !== 'undefined' && activeNav === 'home') { %>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "WebSite",
+  "name": <%- safeJson(t.brand) %>,
+  "url": <%- safeJson(siteUrl + '/') %>,
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": { "@type": "EntryPoint", "urlTemplate": <%- safeJson(siteUrl + prefix + '/shop?q={search_term_string}') %> },
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Organization",
+  "name": <%- safeJson(t.brand) %>,
+  "url": <%- safeJson(siteUrl + '/') %>,
+  "logo": <%- safeJson(siteUrl + '/images/favicon.png') %>,
+  "sameAs": <%- safeJson(socialLinks.map(s => s.url)) %>,
+  "address": { "@type": "PostalAddress", "addressLocality": "Cairo", "addressCountry": "EG" },
+  "areaServed": "EG"
+}
+</script>
+<% } %>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="<%= locale %>" dir="<%= t.dir %>">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <% breadcrumbs.forEach(function(crumb, i) { %>
+        <% if (i === breadcrumbs.length - 1) { %>
+          <span aria-current="page"><%= crumb.name %></span>
+        <% } else { %>
+          <a href="<%= crumb.url %>"><%= crumb.name %></a><span class="breadcrumbs__sep">/</span>
+        <% } %>
+      <% }); %>
+    </nav>
+  </main>
+
+  <%
+    const hasColors = !!(product.colors && product.colors.length);
+    const galleryMap = {};
+    if (hasColors) {
+      product.colors.forEach(function (c) { galleryMap[c.name] = c.images; });
+    } else {
+      galleryMap._default = product.images;
+    }
+    const initialImages = hasColors ? product.colors[0].images : product.images;
+  %>
+  <div class="wrap product-page">
+    <div class="product-page__gallery" data-gallery data-images="<%= JSON.stringify(galleryMap) %>">
+      <div class="product-page__slider">
+        <button type="button" class="product-page__main-image-btn" data-zoom-trigger aria-label="Enlarge image">
+          <img src="<%= initialImages[0] %>" alt="<%= product.name[locale] %>" class="product-page__main-image" data-gallery-main loading="eager" fetchpriority="high" />
+        </button>
+        <button type="button" class="product-page__arrow product-page__arrow--prev" data-gallery-prev aria-label="Previous photo">&#10094;</button>
+        <button type="button" class="product-page__arrow product-page__arrow--next" data-gallery-next aria-label="Next photo">&#10095;</button>
+      </div>
+      <div class="product-page__thumbs" data-gallery-thumbs></div>
+    </div>
+
+    <div class="product-page__details">
+      <span class="product-tag"><%= categoryLabel(product.category) %></span>
+      <h1><%= product.name[locale] %></h1>
+      <% if (product.modelNumber) { %>
+        <p class="product-page__meta"><strong>Model #:</strong> <%= product.modelNumber %></p>
+      <% } %>
+      <p class="product-page__price"><%= formatPrice(product) %></p>
+      <p class="product-page__description"><%= product.description[locale] %></p>
+
+      <% if (product.sizes && product.sizes.length) { %>
+        <p class="product-page__meta"><strong><%= t.sizes %>:</strong> <%= product.sizes.map(sizeLabel).join(', ') %></p>
+      <% } %>
+      <% if (hasColors) { %>
+        <div class="product-page__colors">
+          <span class="product-page__colors-label"><%= t.colors %>:</span>
+          <% product.colors.forEach(function(c, i) { %>
+            <button type="button" class="color-swatch <%= i === 0 ? 'is-active' : '' %>" data-color-swatch data-color="<%= c.name %>"><%= c.name %></button>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <p class="product-page__stock <%= product.inStock ? 'in-stock' : 'out-of-stock' %>">
+        <% if (product.inStock && product.stockQuantity !== null && product.stockQuantity !== undefined && product.stockQuantity <= lowStockThreshold) { %>
+          <%= t.low_stock(product.stockQuantity) %>
+        <% } else { %>
+          <%= product.inStock ? t.in_stock : t.out_of_stock %>
+        <% } %>
+      </p>
+
+      <div class="product-page__actions">
+      <% if (whatsappNumbers && whatsappNumbers.length) { %>
+        <%
+          const message = t.whatsapp_message(product, formatPrice(product), canonicalUrl, locale);
+          const waLinks = whatsappNumbers.map(function (n) {
+            return { label: n.label, href: "https://wa.me/" + n.number + "?text=" + encodeURIComponent(message) };
+          });
+        %>
+        <% if (waLinks.length === 1) { %>
+          <a class="whatsapp-button" href="<%= waLinks[0].href %>" target="_blank" rel="noopener noreferrer">
+            <%= t.order_whatsapp %>
+          </a>
+        <% } else { %>
+          <button type="button" class="whatsapp-button" data-whatsapp-toggle>
+            <%= t.order_whatsapp %>
+          </button>
+          <div class="whatsapp-modal" data-whatsapp-modal hidden>
+            <div class="whatsapp-modal__backdrop" data-whatsapp-close></div>
+            <div class="whatsapp-modal__box" role="dialog" aria-modal="true" aria-label="<%= t.whatsapp_choose_number %>">
+              <p class="whatsapp-modal__title"><%= t.whatsapp_choose_number %></p>
+              <div class="whatsapp-modal__list">
+                <% waLinks.forEach(function (link, i) { %>
+                  <a href="<%= link.href %>" target="_blank" rel="noopener noreferrer" class="whatsapp-modal__option">
+                    <%= link.label || (t.order_whatsapp + " " + (i + 1)) %>
+                  </a>
+                <% }); %>
+              </div>
+              <button type="button" class="btn btn-ghost whatsapp-modal__close" data-whatsapp-close><%= t.whatsapp_choose_close %></button>
+            </div>
+          </div>
+        <% } %>
+      <% } else { %>
+        <p class="whatsapp-missing"><%= t.whatsapp_missing %></p>
+      <% } %>
+
+      <button type="button" class="btn btn-ghost wishlist-btn" data-wishlist-toggle data-product-id="<%= product._id %>" data-remove-text="<%= t.wishlist_remove %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.7-4.35-9.3-8.1C1 10.2 1.4 6.6 4.4 4.9c2.4-1.4 5.2-.6 6.6 1.4l1 1.4 1-1.4c1.4-2 4.2-2.8 6.6-1.4 3 1.7 3.4 5.3 1.7 8-2.6 3.75-9.3 8.1-9.3 8.1z"/></svg>
+        <span data-wishlist-label><%= t.wishlist_add %></span>
+      </button>
+      </div>
+    </div>
+  </div>
+
+  <% if (relatedProducts.length > 0) { %>
+    <section class="wrap related-products">
+      <h2><%= t.you_might_also_like %></h2>
+      <div class="product-grid">
+        <% relatedProducts.forEach(function(p) { %>
+          <a href="<%= prefix %>/product/<%= p.slug %>" class="product-card">
+            <div class="product-card__image">
+              <img src="<%= thumb(p.images[0]) %>" decoding="async" alt="<%= p.name[locale] %>" loading="lazy" />
+              <span class="product-tag"><%= categoryLabel(p.category) %></span>
+              <button type="button" class="wishlist-heart" data-wishlist-toggle data-product-id="<%= p._id %>" aria-label="<%= t.wishlist_add_aria %>">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.7-4.35-9.3-8.1C1 10.2 1.4 6.6 4.4 4.9c2.4-1.4 5.2-.6 6.6 1.4l1 1.4 1-1.4c1.4-2 4.2-2.8 6.6-1.4 3 1.7 3.4 5.3 1.7 8-2.6 3.75-9.3 8.1-9.3 8.1z"/></svg>
+              </button>
+            </div>
+            <h3 class="product-card__name"><%= p.name[locale] %></h3>
+            <p class="product-card__price"><%= formatPrice(p) %></p>
+          </a>
+        <% }); %>
+      </div>
+    </section>
+  <% } %>
+
+  <div class="lightbox" data-lightbox hidden>
+    <button type="button" class="lightbox__close" data-lightbox-close aria-label="Close">&times;</button>
+    <img src="" alt="<%= product.name[locale] %>" data-lightbox-image />
+  </div>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

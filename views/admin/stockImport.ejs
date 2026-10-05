@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="admin">
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a href="/admin" class="wordmark">Jody Office Admin</a>
+      <nav class="admin-nav">
+        <a href="/admin" class="admin-nav__link">Products</a>
+        <a href="/admin/categories" class="admin-nav__link">Categories</a>
+        <a href="/admin/stock-import" class="admin-nav__link is-active">Stock Import</a>
+        <a href="/admin/settings" class="admin-nav__link">Site Settings</a>
+        <% if (currentUser.role === 'ADMIN') { %><a href="/admin/users" class="admin-nav__link">Users</a><% } %>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap admin-panel">
+    <h1>Stock import</h1>
+    <p class="admin-form__hint">
+      Keep stock numbers in sync by uploading a CSV export from Soft Magic (or Excel).
+      Products are matched by <strong>Model Number</strong> — set that on each product first
+      (product edit page).
+    </p>
+
+    <% if (notice) { %>
+      <p class="banner banner--ok"><%= notice %></p>
+    <% } %>
+    <% if (error) { %>
+      <p class="banner banner--error"><%= error %></p>
+    <% } %>
+
+    <fieldset class="admin-form__group" style="max-width: 560px;">
+      <legend>Upload a CSV</legend>
+      <p class="admin-form__hint">
+        Export your stock report from Soft Magic (or Excel) as CSV with two columns per row:
+        <code>model number, quantity</code> — one product per line. A header row is fine, it's skipped automatically.
+      </p>
+      <form method="POST" action="/admin/stock-import" enctype="multipart/form-data" class="admin-form">
+        <label>CSV file
+          <input type="file" name="csvFile" accept=".csv,text/csv" required />
+        </label>
+        <div class="admin-form__actions">
+          <button type="submit" class="btn btn-primary">Upload &amp; update stock</button>
+        </div>
+      </form>
+      <p class="admin-form__hint">Quantity 0 automatically marks the product out of stock; any positive number marks it in stock.</p>
+    </fieldset>
+
+    <% if (results) { %>
+      <div style="margin-top: 24px;">
+        <% if (results.updated.length) { %>
+          <h2 style="font-size:1.1rem;">Updated (<%= results.updated.length %>)</h2>
+          <table class="admin-table">
+            <thead><tr><th>Model #</th><th>Name</th><th>New quantity</th></tr></thead>
+            <tbody>
+              <% results.updated.forEach(function(r) { %>
+                <tr><td><%= r.modelNumber %></td><td><%= r.name %></td><td><%= r.stockQuantity %></td></tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } %>
+        <% if (results.notFound.length) { %>
+          <h2 style="font-size:1.1rem; margin-top:20px;">Not matched (<%= results.notFound.length %>)</h2>
+          <p class="admin-form__hint">These model numbers don't exist on any product — check for typos, or add the model number to that product first.</p>
+          <ul>
+            <% results.notFound.forEach(function(m) { %><li><%= m %></li><% }); %>
+          </ul>
+        <% } %>
+      </div>
+    <% } %>
+  </main>
+</body>
+</html>

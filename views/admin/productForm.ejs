@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/head') %>
+  <style>
+    .stock-picker { max-width: 480px; }
+    .stock-picker input[type="text"] { width: 100%; margin-bottom: 8px; }
+    .stock-picker select { width: 100%; }
+    .stock-picker option.is-oos { color: var(--danger); }
+  </style>
+</head>
+<body class="admin">
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a href="/admin" class="wordmark">Jody Office Admin</a>
+      <nav class="admin-nav">
+        <a href="/admin" class="admin-nav__link is-active">Products</a>
+        <a href="/admin/categories" class="admin-nav__link">Categories</a>
+        <a href="/admin/stock-import" class="admin-nav__link">Stock Import</a>
+        <a href="/admin/settings" class="admin-nav__link">Site Settings</a>
+        <% if (currentUser.role === 'ADMIN') { %><a href="/admin/users" class="admin-nav__link">Users</a><% } %>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap admin-panel">
+    <h1><%= product ? 'Edit product' : 'New product' %></h1>
+
+    <% if (error) { %>
+      <p class="banner banner--error"><%= error %></p>
+    <% } %>
+
+    <%
+      // v.name/v.description are only objects when we're pre-filling from
+      // a saved product; on a validation-error redisplay they come back
+      // as flat nameEn/nameAr/descriptionEn/descriptionAr form fields.
+      const v = values || product || {};
+      const nameEn = v.nameEn !== undefined ? v.nameEn : (v.name && v.name.en) || '';
+      const nameAr = v.nameAr !== undefined ? v.nameAr : (v.name && v.name.ar) || '';
+      const descEn = v.descriptionEn !== undefined ? v.descriptionEn : (v.description && v.description.en) || '';
+      const descAr = v.descriptionAr !== undefined ? v.descriptionAr : (v.description && v.description.ar) || '';
+      const priceEGP = v.priceEGP !== undefined ? v.priceEGP : '';
+      const stockItems = typeof mainProducts !== 'undefined' ? mainProducts : [];
+      // On a validation-error redisplay (values = the submitted form) keep the
+      // checkboxes exactly as the user left them.
+      const redisplay = !!values;
+      const inStockChecked = redisplay ? values.inStock === 'on' : (!product || product.inStock);
+      const featuredChecked = redisplay ? values.featured === 'on' : !!(product && product.featured);
+      // Colors: rebuild rows from the submitted form when redisplaying.
+      let colorRows = (product && product.colors) || [];
+      if (redisplay) {
+        colorRows = [];
+        Object.keys(values).forEach(function (k) {
+          const m = k.match(/^colorName_(\d+)$/);
+          if (!m) return;
+          const existingImgs = (values['colorExisting_' + m[1]] || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+          colorRows.push({ name: values[k], images: existingImgs });
+        });
+      }
+    %>
+    <form
+      method="POST"
+      action="<%= product ? `/admin/products/${product._id}` : '/admin/products' %>"
+      enctype="multipart/form-data"
+      class="admin-form"
+    >
+      <% if (!product) { %>
+      <fieldset class="admin-form__group">
+        <legend>Fill from stock list</legend>
+        <p class="admin-form__hint">
+          Choose an item from your imported stock list — it fills in the name, price,
+          model number and stock quantity below. You'll still choose a category and
+          add photos and a description.
+        </p>
+        <div class="stock-picker">
+          <input type="text" id="stockFilterInput" placeholder="Type to filter the list…" autocomplete="off" />
+          <select id="stockSelect">
+            <option value="">— Select a product from stock (<%= stockItems.length %> items) —</option>
+            <% stockItems.forEach(function(item) { %>
+              <option value="<%= item.id %>"<%- item.available ? '' : ' class="is-oos"' %>>
+                <%= item.knum %><%= item.knum && item.name ? ' — ' : '' %><%= item.name %> (<%= item.price %> EGP)<%= item.available ? '' : ' — out of stock' %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+        <p id="stockPickedNotice" class="admin-form__hint" hidden></p>
+      </fieldset>
+      <script nonce="<%= cspNonce %>">
+        window.MAIN_PRODUCTS = <%- safeJson(stockItems) %>;
+      </script>
+      <% } %>
+
+      <fieldset class="admin-form__group">
+        <legend>English</legend>
+        <label>Name (English)
+          <input type="text" name="nameEn" value="<%= nameEn %>" required />
+        </label>
+        <label>Description (English)
+          <textarea name="descriptionEn" rows="4" required><%= descEn %></textarea>
+        </label>
+      </fieldset>
+
+      <fieldset class="admin-form__group admin-form__group--rtl" dir="rtl">
+        <legend>العربية (Arabic)</legend>
+        <label>الاسم (Name, Arabic)
+          <input type="text" name="nameAr" value="<%= nameAr %>" required />
+        </label>
+        <label>الوصف (Description, Arabic)
+          <textarea name="descriptionAr" rows="4" required><%= descAr %></textarea>
+        </label>
+      </fieldset>
+
+      <label>Price (Egyptian Pound — EGP)
+        <input type="number" name="priceEGP" step="0.01" min="0" value="<%= priceEGP %>" required />
+      </label>
+
+      <label>Category
+        <select name="category" required>
+          <option value="" disabled <%= v.category ? '' : 'selected' %>>Choose a category</option>
+          <% categories.forEach(function(cat) { %>
+            <option value="<%= cat.key %>" <%= v.category === cat.key ? 'selected' : '' %>>
+              <%= cat.label.en %>
+            </option>
+          <% }); %>
+        </select>
+        <span class="admin-form__hint">Need a new one? <a href="/admin/categories">Manage categories</a>.</span>
+      </label>
+
+      <label>Model Number
+        <input type="text" name="modelNumber" value="<%= v.modelNumber || '' %>" placeholder="e.g. JD-1042" />
+      </label>
+
+      <fieldset class="admin-form__group">
+        <legend>Sizes</legend>
+        <% var selectedSizes = Array.isArray(v.sizes) ? v.sizes : (typeof v.sizes === 'string' ? [v.sizes] : ((product && product.sizes) || [])); %>
+        <% sizeOptions.forEach(function(size) { %>
+          <label class="checkbox-label">
+            <input type="checkbox" name="sizes" value="<%= size.key %>" <%= selectedSizes.includes(size.key) ? 'checked' : '' %> />
+            <%= size.en %>
+          </label>
+        <% }); %>
+      </fieldset>
+
+      <label class="checkbox-label">
+        <input type="checkbox" name="inStock" <%= inStockChecked ? 'checked' : '' %> />
+        In stock
+      </label>
+
+      <label>Stock quantity <span class="admin-form__hint" style="margin:0;">(optional — leave empty if you're not tracking exact counts. Set automatically if this product is synced from an ERP.)</span>
+        <input type="number" name="stockQuantity" min="0" step="1" value="<%= (v.stockQuantity !== undefined && v.stockQuantity !== null) ? v.stockQuantity : '' %>" placeholder="e.g. 12" />
+      </label>
+
+      <label class="checkbox-label">
+        <input type="checkbox" name="featured" <%= featuredChecked ? 'checked' : '' %> />
+        Featured on the homepage
+      </label>
+
+      <%
+        const sliderFull = sliderCount >= maxSliderImages;
+        const alreadyInSlider = redisplay ? values.showInSlider === 'on' : !!(product && product.showInSlider);
+        const wasInSlider = !!(product && product.showInSlider);
+      %>
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          name="showInSlider"
+          <%= alreadyInSlider ? 'checked' : '' %>
+          <%= (sliderFull && !alreadyInSlider && !wasInSlider) ? 'disabled' : '' %>
+        />
+        Add this product's first photo to the homepage image slider
+        (<%= sliderCount %>/<%= maxSliderImages %> used<%= (sliderFull && !alreadyInSlider) ? ' — full' : '' %>)
+      </label>
+
+      <label>Images<% if (product) { %> (leave empty to keep current images)<% } %>
+        <input type="file" name="images" accept="image/*" multiple <%= product ? '' : 'required' %> />
+      </label>
+
+      <% if (product && product.images && product.images.length) { %>
+        <div class="admin-form__current-images">
+          <% product.images.forEach(function(img) { %>
+            <img src="<%= img %>" alt="current image" />
+          <% }); %>
+        </div>
+      <% } %>
+
+      <fieldset class="admin-form__group">
+        <legend>Colors &amp; photos</legend>
+        <p class="admin-form__hint">This model comes in several colors? Add each one with its own photos — shoppers pick a color on the product page to see that color's photos.</p>
+        <div id="colorRows"></div>
+        <button type="button" id="addColorBtn" class="btn btn-ghost">+ Add color</button>
+      </fieldset>
+
+      <div class="admin-form__actions">
+        <a href="/admin" class="btn btn-ghost">Cancel</a>
+        <button type="submit" class="btn btn-primary"><%= product ? 'Save changes' : 'Create product' %></button>
+      </div>
+    </form>
+  </main>
+
+  <script nonce="<%= cspNonce %>">
+    (function () {
+      var wrap = document.getElementById('colorRows');
+      var existing = <%- safeJson(colorRows) %>;
+      var n = 0;
+
+      function addRow(name, images) {
+        var i = n++;
+        var row = document.createElement('div');
+        row.className = 'color-row';
+        var thumbs = (images && images.length)
+          ? '<div class="color-row__thumbs">' + images.map(function (src) {
+              return '<img src="' + src + '" alt="" />';
+            }).join('') + '</div>' +
+            '<input type="hidden" name="colorExisting_' + i + '" value="' + images.join(',') + '" />'
+          : '';
+        row.innerHTML =
+          '<input type="text" name="colorName_' + i + '" placeholder="Color name (e.g. Red)" value="' +
+          String(name || '').replace(/"/g, '&quot;') + '" required />' +
+          '<input type="file" name="colorImages_' + i + '" accept="image/*" multiple' +
+          (images && images.length ? '' : ' required') + ' />' +
+          thumbs +
+          '<button type="button" class="color-row__remove" aria-label="Remove color">&times;</button>';
+        row.querySelector('.color-row__remove').addEventListener('click', function () { row.remove(); });
+        wrap.appendChild(row);
+      }
+
+      document.getElementById('addColorBtn').addEventListener('click', function () { addRow('', []); });
+      existing.forEach(function (c) { addRow(c.name, c.images); });
+    })();
+  </script>
+
+  <script nonce="<%= cspNonce %>">
+    (function () {
+      var select = document.getElementById('stockSelect');
+      if (!select) return; // not on the edit form
+
+      var filterInput = document.getElementById('stockFilterInput');
+      var notice = document.getElementById('stockPickedNotice');
+      var form = document.querySelector('form.admin-form');
+      var items = window.MAIN_PRODUCTS || [];
+      var byId = {};
+      items.forEach(function (item) { byId[item.id] = item; });
+
+      var placeholderText = select.options[0].textContent;
+
+      // Rebuild the option list instead of hiding options — <option hidden>
+      // is ignored by Safari and most mobile browsers.
+      filterInput.addEventListener('input', function () {
+        var q = filterInput.value.trim().toLowerCase();
+        var frag = document.createDocumentFragment();
+        var first = document.createElement('option');
+        first.value = '';
+        first.textContent = placeholderText;
+        frag.appendChild(first);
+        items.forEach(function (item) {
+          var matches = !q ||
+            item.knum.toLowerCase().indexOf(q) !== -1 ||
+            item.name.toLowerCase().indexOf(q) !== -1;
+          if (!matches) return;
+          var opt = document.createElement('option');
+          opt.value = item.id;
+          if (!item.available) opt.className = 'is-oos';
+          opt.textContent = (item.knum || '') + (item.knum && item.name ? ' — ' : '') + item.name +
+            ' (' + item.price + ' EGP)' + (item.available ? '' : ' — out of stock');
+          frag.appendChild(opt);
+        });
+        select.innerHTML = '';
+        select.appendChild(frag);
+      });
+
+      select.addEventListener('change', function () {
+        var item = byId[select.value];
+        if (!item) { notice.hidden = true; return; }
+
+        form.nameAr.value = item.name;
+        if (!form.nameEn.value.trim()) form.nameEn.value = item.name;
+        form.priceEGP.value = item.price;
+        form.modelNumber.value = item.knum;
+        form.inStock.checked = item.available;
+        form.stockQuantity.value = item.balance;
+
+        notice.hidden = false;
+        notice.textContent = 'Filled from stock: ' + item.knum + ' — ' + item.name +
+          '. Now pick a category, add photos, and write a description below.';
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "name": "jody-office",
+  "version": "1.0.0",
+  "description": "Jody Office e-commerce site (Express + MongoDB)",
+  "main": "app.js",
+  "private": true,
+  "engines": {
+    "node": ">=18.x"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "create-admin": "node scripts/createAdmin.js",
+    "clean-images": "node scripts/cleanOrphanImages.js",
+    "migrate-images": "node scripts/migrateImages.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.7.5",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "ejs": "^3.1.10",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.4.1",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.7.1",
+    "multer": "^2.2.0",
+    "sharp": "^0.35.5",
+    "validator": "^13.15.35"
+  },
+  "devDependencies": {
+    "nodemon": "^1.14.10"
+  }
+}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="admin">
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a href="/admin" class="wordmark">Jody Office Admin</a>
+      <nav class="admin-nav">
+        <a href="/admin" class="admin-nav__link is-active">Products</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap admin-panel">
+    <section class="danger-zone">
+      <h1>⚠ Delete ALL products</h1>
+
+      <% if (error) { %>
+        <p class="banner banner--error"><%= error %></p>
+      <% } %>
+
+      <% if (total === 0) { %>
+        <p>There are no products to delete.</p>
+        <p><a href="/admin" class="btn btn-ghost btn-sm">Back to products</a></p>
+      <% } else { %>
+        <p><strong>You are about to permanently delete all <%= total %> product<%= total === 1 ? '' : 's' %> from the shop.</strong></p>
+        <ul>
+          <li>This <strong>cannot be undone</strong> — there is no recycle bin and no restore.</li>
+          <li>Every product photo is deleted from the database too.</li>
+          <li>Categories, site settings, admin accounts and the imported stock list are <strong>not</strong> touched.</li>
+          <li>The shop will look empty to customers right away.</li>
+        </ul>
+
+        <form method="POST" action="/admin/products/delete-all" autocomplete="off"
+              data-confirm="Last chance: delete all <%= total %> products permanently?">
+          <label>To continue, type <strong><%= phrase %></strong> below
+            <input type="text" name="confirmText" required autocomplete="off" spellcheck="false" data-delete-phrase="<%= phrase %>" />
+          </label>
+          <label>Your admin password
+            <input type="password" name="password" required autocomplete="current-password" />
+          </label>
+          <p style="margin-top:20px; display:flex; gap:12px; align-items:center;">
+            <button type="submit" class="btn btn-danger" data-delete-submit disabled>Delete all <%= total %> products</button>
+            <a href="/admin" class="btn btn-ghost">Cancel — keep my products</a>
+          </p>
+        </form>
+        <script nonce="<%= cspNonce %>">
+          (function () {
+            var input = document.querySelector("[data-delete-phrase]");
+            var btn = document.querySelector("[data-delete-submit]");
+            if (!input || !btn) return;
+            input.addEventListener("input", function () {
+              btn.disabled = input.value !== input.getAttribute("data-delete-phrase");
+            });
+          })();
+        </script>
+      <% } %>
+    </section>
+  </main>
+</body>
+</html>

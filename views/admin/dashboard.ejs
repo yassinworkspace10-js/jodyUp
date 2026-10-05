@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="admin">
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a href="/admin" class="wordmark">Jody Office Admin</a>
+      <nav class="admin-nav">
+        <a href="/admin" class="admin-nav__link is-active">Products</a>
+        <a href="/admin/categories" class="admin-nav__link">Categories</a>
+        <a href="/admin/stock-import" class="admin-nav__link">Stock Import</a>
+        <a href="/admin/settings" class="admin-nav__link">Site Settings</a>
+        <% if (currentUser.role === 'ADMIN') { %><a href="/admin/users" class="admin-nav__link">Users</a><% } %>
+      </nav>
+      <div class="admin-header-actions">
+        <a href="/admin/products/new" class="btn btn-primary btn-sm">+ New Product</a>
+        <% if (currentUser.role === 'ADMIN' && stats.total > 0) { %><a href="/admin/products/delete-all" class="btn btn-danger-outline btn-sm">Delete all products</a><% } %>
+        <form method="POST" action="/admin/logout" style="display:inline">
+          <button type="submit" class="btn btn-ghost btn-sm">Log out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap admin-panel">
+    <% if (notice) { %>
+      <p class="banner banner--ok"><%= notice %></p>
+    <% } %>
+    <% if (error) { %>
+      <p class="banner banner--error"><%= error %></p>
+    <% } %>
+
+    <div class="admin-stats">
+      <div class="admin-stat">
+        <span class="admin-stat__value"><%= stats.total %></span>
+        <span class="admin-stat__label">Total products</span>
+      </div>
+      <div class="admin-stat">
+        <span class="admin-stat__value"><%= stats.inStock %></span>
+        <span class="admin-stat__label">In stock</span>
+      </div>
+      <div class="admin-stat">
+        <span class="admin-stat__value"><%= stats.featured %></span>
+        <span class="admin-stat__label">Featured</span>
+      </div>
+      <div class="admin-stat">
+        <span class="admin-stat__value"><%= outOfStockCount %></span>
+        <span class="admin-stat__label">Out of stock</span>
+      </div>
+    </div>
+
+    <div class="admin-analytics">
+      <div class="admin-panel-card">
+        <h2>Most viewed products</h2>
+        <% if (!mostViewed.length) { %>
+          <p class="empty-state">No product views recorded yet.</p>
+        <% } else { %>
+          <ol class="admin-mini-list">
+            <% mostViewed.forEach(function(product) { %>
+              <li>
+                <a href="/admin/products/<%= product._id %>/edit"><%= product.name.en %></a>
+                <span class="admin-mini-list__value"><%= product.views %> view<%= product.views === 1 ? '' : 's' %></span>
+              </li>
+            <% }); %>
+          </ol>
+        <% } %>
+      </div>
+
+      <div class="admin-panel-card">
+        <h2>Low stock alerts</h2>
+        <p class="admin-form__hint">In-stock products with <%= lowStockThreshold %> or fewer left.</p>
+        <% if (!lowStock.length) { %>
+          <p class="empty-state">Nothing low on stock right now.</p>
+        <% } else { %>
+          <ol class="admin-mini-list">
+            <% lowStock.forEach(function(product) { %>
+              <li>
+                <a href="/admin/products/<%= product._id %>/edit"><%= product.name.en %></a>
+                <span class="admin-mini-list__value admin-mini-list__value--warn"><%= product.stockQuantity %> left</span>
+              </li>
+            <% }); %>
+          </ol>
+        <% } %>
+      </div>
+    </div>
+
+    <form method="GET" action="/admin" class="admin-search">
+      <input type="search" name="q" value="<%= q %>" placeholder="Search by name or model number…" maxlength="80" />
+      <button type="submit" class="btn btn-ghost btn-sm">Search</button>
+      <% if (q) { %><a href="/admin" class="btn btn-ghost btn-sm">Clear</a><% } %>
+    </form>
+
+    <% if (products.length === 0) { %>
+      <% if (q) { %>
+        <p class="empty-state">No products match “<%= q %>”.</p>
+      <% } else { %>
+        <p class="empty-state">No products yet. <a href="/admin/products/new">Add your first one</a>.</p>
+      <% } %>
+    <% } else { %>
+      <table class="admin-table">
+        <thead>
+          <tr><th>Image</th><th>Name (EN / AR)</th><th>Category</th><th>Price (EGP)</th><th>Stock</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% products.forEach(function(product) { %>
+            <tr>
+              <td><img src="<%= thumb(product.images[0]) %>" alt="<%= product.name.en %>" class="admin-table__thumb" loading="lazy" decoding="async" /></td>
+              <td><%= product.name.en %><br><span dir="rtl"><%= product.name.ar %></span></td>
+              <td><%= categoryLabels[product.category] || product.category %></td>
+              <td><%= product.priceEGP %> ج.م</td>
+              <td>
+                <span class="stock-pill <%= product.inStock ? 'stock-pill--ok' : 'stock-pill--out' %>">
+                  <%= product.inStock ? 'In stock' : 'Out of stock' %>
+                </span>
+                <% if (product.stockQuantity !== null && product.stockQuantity !== undefined) { %>
+                  <span class="stock-qty">(<%= product.stockQuantity %>)</span>
+                <% } %>
+              </td>
+              <td class="admin-table__actions">
+                <a href="/admin/products/<%= product._id %>/edit">Edit</a>
+                <form method="POST" action="/admin/products/<%= product._id %>/delete" data-confirm="Delete “<%= product.name.en %>”? This can't be undone." style="display:inline">
+                  <button type="submit" class="link-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      <% if (totalPages > 1) { %>
+        <nav class="pagination" aria-label="Pagination">
+          <% const base = (n) => '/admin?page=' + n + (q ? '&q=' + encodeURIComponent(q) : ''); %>
+          <% if (page > 1) { %><a class="btn btn-ghost btn-sm" href="<%= base(page - 1) %>">Previous</a><% } %>
+          <span class="pagination__info">Page <%= page %> of <%= totalPages %> · <%= filteredTotal %> products</span>
+          <% if (page < totalPages) { %><a class="btn btn-ghost btn-sm" href="<%= base(page + 1) %>">Next</a><% } %>
+        </nav>
+      <% } %>
+    <% } %>
+  </main>
+</body>
+</html>

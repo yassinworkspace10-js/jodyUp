@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="<%= locale %>" dir="<%= t.dir %>">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main>
+    <section class="hero <%= heroSlides.length > 0 ? 'hero--slider' : '' %>" <%= heroSlides.length > 1 ? 'data-slider' : '' %>>
+      <% if (heroSlides.length > 0) { %>
+        <div class="hero-slider__bg">
+          <% heroSlides.forEach(function(src, i) { %>
+            <div
+              class="hero-slide <%= i === 0 ? 'is-active' : '' %>"
+              style="background-image: url('<%= src %>');"
+              data-slider-slide
+            ></div>
+          <% }); %>
+        </div>
+        <div class="hero__scrim"></div>
+      <% } %>
+      <div class="wrap hero__content">
+        <h1><%= t.hero_title %></h1>
+        <p><%= t.hero_subtitle %></p>
+        <a href="<%= prefix %>/shop" class="btn btn-primary"><%= t.hero_cta %></a>
+      </div>
+      <% if (heroSlides.length > 1) { %>
+        <button type="button" class="hero-slider__arrow hero-slider__arrow--prev" data-slider-prev aria-label="<%= t.slider_prev %>">&#10094;</button>
+        <button type="button" class="hero-slider__arrow hero-slider__arrow--next" data-slider-next aria-label="<%= t.slider_next %>">&#10095;</button>
+        <div class="hero-slider__dots" data-slider-dots>
+          <% heroSlides.forEach(function(_, i) { %>
+            <button
+              type="button"
+              class="hero-slider__dot <%= i === 0 ? 'is-active' : '' %>"
+              data-slider-dot
+              data-index="<%= i %>"
+              aria-label="<%= (locale === 'ar' ? 'الشريحة ' : 'Slide ') + (i + 1) %>"
+            ></button>
+          <% }); %>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="wrap about-section">
+      <h2><%= t.about_title %></h2>
+      <p><%= t.about_body %></p>
+    </section>
+
+    <% if (categoryTiles.length > 0) { %>
+      <div class="category-showcase-band">
+        <section class="wrap category-showcase">
+          <h2><%= t.shop_by_category %></h2>
+          <div class="category-showcase__grid">
+            <% categoryTiles.forEach(function(tile) { %>
+              <a href="<%= prefix %>/shop?category=<%= tile.category %>" class="category-tile">
+                <img src="<%= thumb(tile.image) %>" decoding="async" alt="<%= tile.label %>" loading="lazy" />
+                <span><%= tile.label %></span>
+              </a>
+            <% }); %>
+          </div>
+        </section>
+      </div>
+    <% } %>
+
+    <% if (featuredProducts.length > 0) { %>
+      <section class="wrap">
+        <h2><%= t.featured %></h2>
+        <div class="product-grid">
+          <% featuredProducts.forEach(function(product) { %>
+            <%
+              const lowStock = product.inStock && product.stockQuantity !== null && product.stockQuantity !== undefined && product.stockQuantity <= lowStockThreshold;
+            %>
+            <a href="<%= prefix %>/product/<%= product.slug %>" class="product-card<%= !product.inStock ? ' is-out-of-stock' : '' %>">
+              <div class="product-card__image">
+                <img src="<%= thumb(product.images[0]) %>" decoding="async" alt="<%= product.name[locale] %>" loading="lazy" />
+                <span class="product-tag"><%= categoryLabel(product.category) %></span>
+                <% if (!product.inStock) { %>
+                  <span class="stock-badge stock-badge--out"><%= t.out_of_stock %></span>
+                <% } else if (lowStock) { %>
+                  <span class="stock-badge stock-badge--low"><%= t.low_stock(product.stockQuantity) %></span>
+                <% } %>
+                <button type="button" class="wishlist-heart" data-wishlist-toggle data-product-id="<%= product._id %>" aria-label="<%= t.wishlist_add_aria %>">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6.7-4.35-9.3-8.1C1 10.2 1.4 6.6 4.4 4.9c2.4-1.4 5.2-.6 6.6 1.4l1 1.4 1-1.4c1.4-2 4.2-2.8 6.6-1.4 3 1.7 3.4 5.3 1.7 8-2.6 3.75-9.3 8.1-9.3 8.1z"/></svg>
+                </button>
+              </div>
+              <h2 class="product-card__name"><%= product.name[locale] %></h2>
+              <p class="product-card__price"><%= formatPrice(product) %></p>
+            </a>
+          <% }); %>
+        </div>
+      </section>
+    <% } %>
+
+    <section class="wrap social-banner">
+      <h2><%= t.follow_along %></h2>
+      <p><%= t.follow_body %></p>
+      <div class="social-banner__links">
+        <% socialLinks.forEach(function(social) { %>
+          <a href="<%= social.url %>" target="_blank" rel="noopener noreferrer" class="btn btn-ghost"><%= social.name %></a>
+        <% }); %>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

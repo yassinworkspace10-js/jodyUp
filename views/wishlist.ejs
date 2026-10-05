@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="<%= locale %>" dir="<%= t.dir %>">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <% breadcrumbs.forEach(function(crumb, i) { %>
+        <% if (i === breadcrumbs.length - 1) { %>
+          <span aria-current="page"><%= crumb.name %></span>
+        <% } else { %>
+          <a href="<%= crumb.url %>"><%= crumb.name %></a><span class="breadcrumbs__sep">/</span>
+        <% } %>
+      <% }); %>
+    </nav>
+
+    <section class="page-heading">
+      <h1><%= t.wishlist_page_title %></h1>
+    </section>
+
+    <div
+      data-wishlist-page
+      data-prefix="<%= prefix %>"
+      data-locale="<%= locale %>"
+      data-empty-text="<%= t.wishlist_empty %>"
+      data-empty-cta-text="<%= t.wishlist_empty_cta %>"
+      data-loading-text="<%= t.wishlist_loading %>"
+      data-remove-aria="<%= t.wishlist_remove_aria %>"
+    >
+      <p class="empty-state" data-wishlist-status><%= t.wishlist_loading %></p>
+      <div class="product-grid" data-wishlist-grid hidden></div>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="<%= locale %>" dir="<%= t.dir %>">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="wrap not-found">
+    <h1><%= title %></h1>
+    <% if (typeof message !== 'undefined' && message) { %>
+      <p class="not-found__message"><%= message %></p>
+    <% } %>
+    <p><a href="<%= prefix %>/"><%= t.back_to_shopping %></a></p>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>
